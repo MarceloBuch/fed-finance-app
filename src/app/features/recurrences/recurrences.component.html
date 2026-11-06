@@ -1,0 +1,309 @@
+<div class="space-y-8 animate-fade-in">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-white tracking-wide">Recorrências e Parcelamentos</h2>
+      <p class="text-sm text-slate-400 mt-1">
+        Gerencie suas contas fixas contínuas e compras/empréstimos parcelados.
+      </p>
+    </div>
+
+    <button type="button"
+            (click)="openCreateModal()"
+            class="px-5 py-2.5 bg-[#00E5FF] hover:bg-cyan-400 text-[#0B101E] text-sm font-bold rounded-full transition-colors flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+      {{ activeTab() === 'FIXED' ? 'Nova Conta Fixa' : 'Novo Parcelamento' }}
+    </button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <div class="p-6 bg-[#181F32] rounded-3xl border border-[#1e293b]/20 flex justify-between items-center">
+      <div>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Comprometimento Mensal Fixo</span>
+        <p class="text-2xl font-bold text-rose-400 mt-1">R$ {{ totalMonthlyFixedExpense() | number:'1.2-2' }}</p>
+      </div>
+      <span class="text-xs px-3 py-1 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30 font-semibold">
+        {{ recurringList().length }} Contas Fixas
+      </span>
+    </div>
+
+    <div class="p-6 bg-[#181F32] rounded-3xl border border-[#1e293b]/20 flex justify-between items-center">
+      <div>
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Comprometimento Mensal de Parcelas</span>
+        <p class="text-2xl font-bold text-[#00E5FF] mt-1">R$ {{ totalMonthlyInstallmentCommitment() | number:'1.2-2' }}</p>
+      </div>
+      <span class="text-xs px-3 py-1 rounded-full bg-cyan-950 text-[#00E5FF] border border-[#00E5FF]/30 font-semibold">
+        {{ installmentList().length }} Parcelamentos
+      </span>
+    </div>
+  </div>
+
+  <!-- Tabs Selector -->
+  <div class="flex gap-2 p-1.5 bg-[#181F32] rounded-2xl border border-[#1e293b]/40 max-w-md">
+    <button type="button"
+            (click)="activeTab.set('FIXED')"
+            class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all"
+            [ngClass]="activeTab() === 'FIXED' ? 'bg-[#00E5FF] text-[#0B101E] shadow' : 'text-slate-400 hover:text-white'">
+      Contas Fixas ({{ recurringList().length }})
+    </button>
+    <button type="button"
+            (click)="activeTab.set('INSTALLMENT')"
+            class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all"
+            [ngClass]="activeTab() === 'INSTALLMENT' ? 'bg-[#00E5FF] text-[#0B101E] shadow' : 'text-slate-400 hover:text-white'">
+      Parcelamentos ({{ installmentList().length }})
+    </button>
+  </div>
+
+  <!-- Tab 1: Contas Fixas -->
+  @if (activeTab() === 'FIXED') {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (rec of recurringList(); track rec.id) {
+        <div class="p-6 bg-[#181F32] rounded-3xl border border-[#1e293b]/10 flex flex-col justify-between space-y-5 hover:border-[#00E5FF]/40 transition-colors">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30">
+                {{ getFrequencyLabel(rec.frequency) }} • Dia {{ rec.dayOfMonth || 1 }}
+              </span>
+              <h4 class="text-lg font-bold text-white mt-2">{{ rec.description }}</h4>
+              <p class="text-xs text-slate-400 mt-0.5">
+                @if (rec.type === 'TRANSFER') {
+                  Transferência • {{ getAccountName(rec.accountId) }} -> {{ getAccountName(rec.destinationAccountId) }}
+                } @else {
+                  {{ getCategoryName(rec.categoryId) }} • {{ getAccountName(rec.accountId) }}
+                }
+              </p>
+            </div>
+            <button type="button"
+                    (click)="deleteRecurrence(rec.id)"
+                    class="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                    title="Encerrar Conta Fixa e Remover Pendentes Futuros">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex justify-between items-end pt-2 border-t border-[#1e293b]/30">
+            <div>
+              <span class="text-[10px] text-slate-500 uppercase">Valor Mensal</span>
+              <p class="text-xl font-bold"
+                 [ngClass]="rec.type === 'INCOME' ? 'text-[#00FF88]' : 'text-rose-400'">
+                R$ {{ rec.amount | number:'1.2-2' }}
+              </p>
+            </div>
+            <span class="text-[11px] text-slate-400">Início: {{ rec.startDate }}</span>
+          </div>
+        </div>
+      } @empty {
+        <div class="col-span-full py-12 bg-[#181F32] rounded-3xl border border-[#1e293b]/10 text-center text-slate-400 text-sm">
+          Nenhuma conta fixa cadastrada.
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Tab 2: Parcelamentos -->
+  @if (activeTab() === 'INSTALLMENT') {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (inst of installmentList(); track inst.id) {
+        <div class="p-6 bg-[#181F32] rounded-3xl border border-[#1e293b]/10 flex flex-col justify-between space-y-5 hover:border-[#00E5FF]/40 transition-colors">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-cyan-950 text-[#00E5FF] border border-[#00E5FF]/30">
+                {{ inst.totalInstallments }}x Parcelas • Dia {{ inst.dayOfMonth || 1 }}
+              </span>
+              <h4 class="text-lg font-bold text-white mt-2">{{ inst.description }}</h4>
+              <p class="text-xs text-slate-400 mt-0.5">
+                {{ getCategoryName(inst.categoryId) }} • {{ getAccountName(inst.accountId) }}
+              </p>
+            </div>
+            <button type="button"
+                    (click)="deleteRecurrence(inst.id)"
+                    class="text-slate-500 hover:text-rose-400 p-1 transition-colors"
+                    title="Cancelar Parcelamento e Remover Pendentes">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex justify-between items-end pt-2 border-t border-[#1e293b]/30">
+            <div>
+              <span class="text-[10px] text-slate-500 uppercase">Valor da Parcela</span>
+              <p class="text-xl font-bold text-[#00E5FF]">
+                R$ {{ inst.amount | number:'1.2-2' }}
+              </p>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-slate-500 uppercase">Valor Total</span>
+              <p class="text-sm font-semibold text-slate-200">
+                R$ {{ (inst.amount * (inst.totalInstallments || 1)) | number:'1.2-2' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="col-span-full py-12 bg-[#181F32] rounded-3xl border border-[#1e293b]/10 text-center text-slate-400 text-sm">
+          Nenhum parcelamento cadastrado.
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Create Modal -->
+  @if (showModal) {
+    <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md bg-black/60 animate-fade-in">
+      <div class="w-full max-w-lg p-8 bg-[#181F32] rounded-3xl border border-[#1e293b]/40 shadow-2xl relative">
+        <button type="button" (click)="showModal = false" class="absolute top-5 right-5 text-slate-400 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h3 class="text-lg font-bold text-white mb-6">
+          {{ kind === 'FIXED' ? 'Nova Conta Fixa' : 'Novo Parcelamento' }}
+        </h3>
+
+        <form (ngSubmit)="onSubmit()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Descrição</label>
+            <input type="text" [(ngModel)]="description" name="description" required placeholder="Ex: Aluguel, Notebook"
+                   class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+          </div>
+
+          @if (kind === 'INSTALLMENT') {
+            <div class="grid grid-cols-2 gap-2 p-1 bg-[#111727] rounded-xl border border-[#1e293b]/40">
+              <button type="button" (click)="amountInputMode = 'INSTALLMENT_VALUE'"
+                      class="py-1.5 rounded-lg text-xs font-bold"
+                      [ngClass]="amountInputMode === 'INSTALLMENT_VALUE' ? 'bg-[#00E5FF] text-[#0B101E]' : 'text-slate-400'">
+                Informar Valor da Parcela
+              </button>
+              <button type="button" (click)="amountInputMode = 'TOTAL_VALUE'"
+                      class="py-1.5 rounded-lg text-xs font-bold"
+                      [ngClass]="amountInputMode === 'TOTAL_VALUE' ? 'bg-[#00E5FF] text-[#0B101E]' : 'text-slate-400'">
+                Informar Valor Total
+              </button>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 gap-4">
+            @if (kind === 'INSTALLMENT' && amountInputMode === 'TOTAL_VALUE') {
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Valor Total (R$)</label>
+                <input type="number" step="0.01" [(ngModel)]="totalPurchaseValue" name="totalPurchaseValue" required
+                       class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+              </div>
+            } @else {
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  {{ kind === 'INSTALLMENT' ? 'Valor da Parcela (R$)' : 'Valor (R$)' }}
+                </label>
+                <input type="number" step="0.01" [(ngModel)]="amount" name="amount" required
+                       class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+              </div>
+            }
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">1º Vencimento</label>
+              <input type="date" [(ngModel)]="startDate" name="startDate" required
+                     class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Fluxo</label>
+              <select [(ngModel)]="type" name="type" (change)="onTypeChange()"
+                      class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                <option value="EXPENSE">Despesa</option>
+                <option value="INCOME">Receita</option>
+                @if (kind === 'FIXED') {
+                  <option value="TRANSFER">Transferência entre Contas</option>
+                }
+              </select>
+            </div>
+
+            @if (kind === 'INSTALLMENT') {
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nº de Parcelas</label>
+                <input type="number" min="2" max="120" [(ngModel)]="totalInstallments" name="totalInstallments" required
+                       class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+              </div>
+            } @else {
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Frequência</label>
+                <select [(ngModel)]="frequency" name="frequency"
+                        class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  <option value="MONTHLY">Mensal</option>
+                  <option value="YEARLY">Anual</option>
+                </select>
+              </div>
+            }
+          </div>
+
+          @if (type === 'TRANSFER') {
+            <div class="grid grid-cols-2 gap-4 p-4 bg-[#111727]/70 rounded-2xl border border-[#00E5FF]/30">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Conta de Origem</label>
+                <select [(ngModel)]="accountId" name="accountId" required
+                        class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  @for (acc of nonCardAccounts(); track acc.id) {
+                    <option [value]="acc.id">{{ acc.name }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Conta de Destino</label>
+                <select [(ngModel)]="destinationAccountId" name="destinationAccountId" required
+                        class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  @for (acc of nonCardAccounts(); track acc.id) {
+                    @if (acc.id !== accountId) {
+                      <option [value]="acc.id">{{ acc.name }}</option>
+                    }
+                  }
+                </select>
+              </div>
+            </div>
+          } @else {
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Conta Padrão</label>
+                <select [(ngModel)]="accountId" name="accountId"
+                        class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  <option value="">Escolher na baixa</option>
+                  @for (acc of accounts(); track acc.id) {
+                    <option [value]="acc.id">{{ acc.name }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Categoria</label>
+                <select [(ngModel)]="categoryId" name="categoryId"
+                        class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  <option value="">Sem Categoria</option>
+                  @for (cat of categories(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          }
+
+          <div class="flex gap-3 pt-4">
+            <button type="button" (click)="showModal = false"
+                    class="flex-1 py-3 border border-[#1e293b]/50 rounded-xl text-sm font-semibold text-slate-300 hover:text-white">
+              Cancelar
+            </button>
+            <button type="submit"
+                    class="flex-1 py-3 bg-[#00E5FF] hover:bg-cyan-400 text-[#0B101E] text-sm font-bold rounded-xl">
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

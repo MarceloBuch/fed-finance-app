@@ -1,0 +1,494 @@
+<div class="space-y-8 animate-fade-in">
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-white tracking-wide">Lançamentos ({{ periodContext.label() }})</h2>
+      <p class="text-sm text-slate-400 mt-1">
+        Gerencie suas receitas, despesas e transferências com baixa em 1 clique.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-3">
+      <button type="button"
+              (click)="openTransferModal()"
+              class="px-5 py-2.5 bg-[#181F32] hover:bg-[#111727] text-[#00E5FF] border border-[#00E5FF]/40 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+        </svg>
+        Transferir entre Contas
+      </button>
+
+      <button type="button"
+              (click)="openCreateModal()"
+              class="px-5 py-2.5 bg-[#00E5FF] hover:bg-cyan-400 text-[#0B101E] text-sm font-bold rounded-full transition-colors flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Novo Lançamento
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="p-5 bg-[#181F32] rounded-2xl border border-[#1e293b]/20">
+      <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Receitas no Mês</span>
+      <p class="text-xl font-bold text-[#00FF88] mt-1">R$ {{ totalIncome() | number:'1.2-2' }}</p>
+    </div>
+    <div class="p-5 bg-[#181F32] rounded-2xl border border-[#1e293b]/20">
+      <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Despesas Totais</span>
+      <p class="text-xl font-bold text-rose-400 mt-1">R$ {{ totalExpense() | number:'1.2-2' }}</p>
+    </div>
+    <div class="p-5 bg-[#181F32] rounded-2xl border border-[#1e293b]/20">
+      <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Despesas Pagas</span>
+      <p class="text-xl font-bold text-[#00E5FF] mt-1">R$ {{ totalPaidExpense() | number:'1.2-2' }}</p>
+    </div>
+    <div class="p-5 bg-[#181F32] rounded-2xl border border-[#1e293b]/20">
+      <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Despesas Pendentes</span>
+      <p class="text-xl font-bold text-amber-400 mt-1">R$ {{ totalPendingExpense() | number:'1.2-2' }}</p>
+    </div>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="p-5 bg-[#181F32] rounded-3xl border border-[#1e293b]/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+    <div>
+      <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Status</label>
+      <select [(ngModel)]="filterStatus" (change)="applyFilters()"
+              class="w-full px-3 py-2 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-xs">
+        <option value="">Todos</option>
+        <option value="PENDING">Pendentes</option>
+        <option value="PAID">Pagos</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Tipo</label>
+      <select [(ngModel)]="filterType" (change)="applyFilters()"
+              class="w-full px-3 py-2 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-xs">
+        <option value="">Todos</option>
+        <option value="EXPENSE">Despesas</option>
+        <option value="INCOME">Receitas</option>
+        <option value="TRANSFER">Transferências</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Conta</label>
+      <select [(ngModel)]="filterAccountId" (change)="applyFilters()"
+              class="w-full px-3 py-2 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-xs">
+        <option value="">Todas as Contas</option>
+        @for (acc of accounts(); track acc.id) {
+          <option [value]="acc.id">{{ acc.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Categoria</label>
+      <select [(ngModel)]="filterCategoryId" (change)="applyFilters()"
+              class="w-full px-3 py-2 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-xs">
+        <option value="">Todas as Categorias</option>
+        @for (cat of categories(); track cat.id) {
+          <option [value]="cat.id">{{ cat.name }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <button type="button" (click)="clearFilters()"
+              class="w-full py-2 border border-[#1e293b]/60 text-slate-300 hover:text-white text-xs font-semibold rounded-xl transition-colors">
+        Limpar Filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="p-6 bg-[#181F32] rounded-3xl border border-[#1e293b]/10 shadow-lg shadow-black/10">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-lg font-semibold text-white">Lista de Lançamentos</h3>
+      <span class="text-xs text-slate-400 bg-[#111727] px-3 py-1 rounded-full border border-[#1e293b]/20">
+        {{ transactions().length }} registros
+      </span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="border-b border-[#1e293b]/30 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <th class="py-3.5 px-4">Vencimento / Data</th>
+            <th class="py-3.5 px-4">Descrição</th>
+            <th class="py-3.5 px-4">Conta</th>
+            <th class="py-3.5 px-4">Categoria</th>
+            <th class="py-3.5 px-4">Status</th>
+            <th class="py-3.5 px-4 text-right">Valor</th>
+            <th class="py-3.5 px-4 text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[#1e293b]/20">
+          @for (t of transactions(); track t.id) {
+            <tr class="text-sm hover:bg-[#111727]/40 transition-colors">
+              <td class="py-4 px-4 text-slate-300 font-medium whitespace-nowrap">
+                <div>{{ t.dueDate }}</div>
+                @if (t.paidDate) {
+                  <div class="text-[10px] text-emerald-400">Pago em {{ t.paidDate }}</div>
+                }
+              </td>
+              <td class="py-4 px-4">
+                <div class="flex items-center gap-2">
+                  <span class="text-white font-semibold">{{ t.description }}</span>
+                  @if (t.installmentNumber) {
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-[#00E5FF] border border-[#00E5FF]/30">
+                      Parcela #{{ t.installmentNumber }}
+                    </span>
+                  } @else if (t.recurrenceId) {
+                    <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30">
+                      Fixo
+                    </span>
+                  }
+                </div>
+                @if (t.notes) {
+                  <p class="text-[11px] text-slate-400 mt-0.5">{{ t.notes }}</p>
+                }
+              </td>
+              <td class="py-4 px-4 text-xs text-slate-300">
+                @if (t.type === 'TRANSFER') {
+                  <span class="font-semibold text-[#00E5FF]">{{ getAccountName(t.accountId) }}</span>
+                  <span class="text-slate-500 mx-1">-></span>
+                  <span class="font-semibold text-[#00FF88]">{{ getAccountName(t.destinationAccountId) }}</span>
+                } @else {
+                  {{ getAccountName(t.accountId) }}
+                }
+              </td>
+              <td class="py-4 px-4 text-xs text-slate-300">
+                {{ t.type === 'TRANSFER' ? 'Transferência' : getCategoryName(t.categoryId) }}
+              </td>
+              <td class="py-4 px-4">
+                @if (t.status === 'PAID') {
+                  <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-emerald-950/80 text-[#00FF88] border border-emerald-500/30">
+                    Pago
+                  </span>
+                } @else {
+                  <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30">
+                    Pendente
+                  </span>
+                }
+              </td>
+              <td class="py-4 px-4 text-right font-bold whitespace-nowrap"
+                  [ngClass]="{
+                    'text-[#00FF88]': t.type === 'INCOME',
+                    'text-rose-400': t.type === 'EXPENSE',
+                    'text-[#00E5FF]': t.type === 'TRANSFER'
+                  }">
+                {{ t.type === 'INCOME' ? '+' : (t.type === 'EXPENSE' ? '-' : '') }} R$ {{ t.amount | number:'1.2-2' }}
+              </td>
+              <td class="py-4 px-4 text-center">
+                <div class="flex items-center justify-center gap-1.5">
+                  @if (t.invoiceId) {
+                    <a routerLink="/credit-cards"
+                       class="px-2.5 py-1 bg-purple-950/80 hover:bg-purple-900/80 text-purple-300 border border-purple-500/30 rounded-lg text-[11px] font-bold transition-colors"
+                       title="Ir para Fatura do Cartão">
+                      Fatura {{ t.invoiceReferenceMonth || 'Cartão' }}
+                    </a>
+                  } @else if (t.status === 'PENDING') {
+                    <button type="button"
+                            (click)="onQuickPay(t)"
+                            class="px-2.5 py-1 bg-[#00FF88]/15 hover:bg-[#00FF88]/25 text-[#00FF88] border border-[#00FF88]/30 rounded-lg text-xs font-bold transition-colors"
+                            title="Baixar Lançamento (1 clique se conta definida)">
+                      Baixar
+                    </button>
+                  } @else {
+                    <button type="button"
+                            (click)="onUnpay(t)"
+                            class="px-2.5 py-1 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-bold transition-colors"
+                            title="Estornar para Pendente">
+                      Estornar
+                    </button>
+                  }
+
+                  <button type="button" (click)="openEditModal(t)" class="text-slate-400 hover:text-[#00E5FF] p-1" title="Editar">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                    </svg>
+                  </button>
+
+                  <button type="button" (click)="deleteTransaction(t)" class="text-slate-500 hover:text-rose-400 p-1" title="Excluir">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="py-12 text-slate-500 text-center text-sm">
+                Nenhum lançamento encontrado para este período.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Create / Edit Modal -->
+  @if (showFormModal) {
+    <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md bg-black/60 animate-fade-in">
+      <div class="w-full max-w-lg p-8 bg-[#181F32] rounded-3xl border border-[#1e293b]/40 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button type="button" (click)="showFormModal = false" class="absolute top-5 right-5 text-slate-400 hover:text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h3 class="text-lg font-bold text-white mb-5">
+          {{ editingTransactionId ? 'Editar Lançamento' : 'Novo Lançamento' }}
+        </h3>
+
+        <!-- Mode Selector (Único | Fixo | Parcelado) when creating -->
+        @if (!editingTransactionId) {
+          <div class="grid grid-cols-3 gap-2 p-1 bg-[#111727] rounded-2xl mb-6 border border-[#1e293b]/40">
+            <button type="button" (click)="entryKind = 'SINGLE'"
+                    class="py-2 rounded-xl text-xs font-bold transition-colors"
+                    [ngClass]="entryKind === 'SINGLE' ? 'bg-[#00E5FF] text-[#0B101E]' : 'text-slate-400 hover:text-white'">
+              Único
+            </button>
+            <button type="button" (click)="entryKind = 'FIXED'"
+                    class="py-2 rounded-xl text-xs font-bold transition-colors"
+                    [ngClass]="entryKind === 'FIXED' ? 'bg-[#00E5FF] text-[#0B101E]' : 'text-slate-400 hover:text-white'">
+              Fixo (Recorrente)
+            </button>
+            <button type="button" (click)="entryKind = 'INSTALLMENT'"
+                    class="py-2 rounded-xl text-xs font-bold transition-colors"
+                    [ngClass]="entryKind === 'INSTALLMENT' ? 'bg-[#00E5FF] text-[#0B101E]' : 'text-slate-400 hover:text-white'">
+              Parcelado
+            </button>
+          </div>
+        }
+
+        <form (ngSubmit)="onSubmitForm()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Descrição</label>
+            <input type="text" [(ngModel)]="description" name="description" required placeholder="Ex: Aluguel, Supermercado"
+                   class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                {{ entryKind === 'INSTALLMENT' ? 'Valor da Parcela (R$)' : 'Valor (R$)' }}
+              </label>
+              <input type="number" step="0.01" [(ngModel)]="amount" name="amount" required
+                     class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                {{ isSelectedAccountCreditCard() ? 'Data da Compra' : 'Data de Vencimento' }}
+              </label>
+              <input type="date" [(ngModel)]="dueDate" name="dueDate" required
+                     class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Tipo</label>
+              <select [(ngModel)]="type" name="type" (change)="onTypeChange()" [disabled]="isSelectedAccountCreditCard()"
+                      class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                <option value="EXPENSE">Despesa</option>
+                @if (!isSelectedAccountCreditCard()) {
+                  <option value="INCOME">Receita</option>
+                  @if (entryKind !== 'INSTALLMENT') {
+                    <option value="TRANSFER">Transferência entre Contas</option>
+                  }
+                }
+              </select>
+            </div>
+            @if (type !== 'TRANSFER') {
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Categoria</label>
+                <select [(ngModel)]="categoryId" name="categoryId"
+                        class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  <option value="">Sem Categoria</option>
+                  @for (cat of categories(); track cat.id) {
+                    <option [value]="cat.id">{{ cat.name }}</option>
+                  }
+                </select>
+              </div>
+            } @else {
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Status Inicial</label>
+                <select [(ngModel)]="status" name="status"
+                        class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  <option value="PAID">Efetivada (Pago)</option>
+                  <option value="PENDING">Agendada (Pendente)</option>
+                </select>
+              </div>
+            }
+          </div>
+
+          @if (type === 'TRANSFER') {
+            <div class="grid grid-cols-2 gap-4 p-4 bg-[#111727]/70 rounded-2xl border border-[#00E5FF]/30">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  Conta de Origem (Sai de)
+                </label>
+                <select [(ngModel)]="accountId" name="accountId" (change)="onAccountChange()" required
+                        class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  @for (acc of nonCardAccounts(); track acc.id) {
+                    <option [value]="acc.id">{{ acc.name }} (R$ {{ acc.currentBalance | number:'1.2-2' }})</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  Conta de Destino (Vai para)
+                </label>
+                <select [(ngModel)]="destinationAccountId" name="destinationAccountId" required
+                        class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  @for (acc of nonCardAccounts(); track acc.id) {
+                    @if (acc.id !== accountId) {
+                      <option [value]="acc.id">{{ acc.name }} (R$ {{ acc.currentBalance | number:'1.2-2' }})</option>
+                    }
+                  }
+                </select>
+              </div>
+            </div>
+          } @else {
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                  Conta / Cartão
+                </label>
+                <select [(ngModel)]="accountId" name="accountId" (change)="onAccountChange()"
+                        class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  <option value="">Escolher na hora de pagar</option>
+                  @for (acc of accounts(); track acc.id) {
+                    <option [value]="acc.id">
+                      {{ acc.name }} {{ acc.accountType === 'CREDIT_CARD' ? '(Cartão)' : '' }}
+                    </option>
+                  }
+                </select>
+              </div>
+
+              @if (entryKind === 'SINGLE') {
+                @if (isSelectedAccountCreditCard()) {
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Fatura Destino</label>
+                    <div class="px-4 py-2.5 bg-purple-950/60 border border-purple-500/40 rounded-xl text-purple-200 text-xs font-bold">
+                      Entra na Fatura {{ getPredictedInvoiceMonth() }}
+                    </div>
+                  </div>
+                } @else {
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Status Inicial</label>
+                    <select [(ngModel)]="status" name="status"
+                            class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                      <option value="PENDING">Pendente (Previsto)</option>
+                      <option value="PAID">Pago (Efetivado)</option>
+                    </select>
+                  </div>
+                }
+              } @else if (entryKind === 'INSTALLMENT') {
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Nº de Parcelas</label>
+                  <input type="number" min="2" max="120" [(ngModel)]="totalInstallments" name="totalInstallments"
+                         class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                </div>
+              } @else {
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Frequência</label>
+                  <select [(ngModel)]="frequency" name="frequency"
+                          class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                    <option value="MONTHLY">Mensal</option>
+                    <option value="YEARLY">Anual</option>
+                  </select>
+                </div>
+              }
+            </div>
+          }
+
+          @if (isSelectedAccountCreditCard() && entryKind !== 'SINGLE') {
+            <div class="p-3 bg-purple-950/40 border border-purple-500/30 rounded-xl text-xs text-purple-200">
+              Primeira ocorrência entra na <strong>Fatura {{ getPredictedInvoiceMonth() }}</strong>.
+            </div>
+          }
+
+          @if (isEditingRecurring) {
+            <div class="p-3 bg-[#111727] rounded-xl border border-[#00E5FF]/30 space-y-2">
+              <label class="block text-xs font-bold text-[#00E5FF] uppercase tracking-wider">
+                Escopo da Alteração na Série Recorrente
+              </label>
+              <select [(ngModel)]="editMode" name="editMode"
+                      class="w-full px-3 py-2 bg-[#181F32] border border-[#1e293b] rounded-lg text-white text-xs">
+                <option value="THIS">Apenas esta ocorrência</option>
+                <option value="THIS_AND_FOLLOWING">Esta e as próximas pendentes</option>
+                <option value="ALL">Todas as ocorrências pendentes</option>
+              </select>
+            </div>
+          }
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Observações</label>
+            <input type="text" [(ngModel)]="notes" name="notes" placeholder="Opcional"
+                   class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="button" (click)="showFormModal = false"
+                    class="flex-1 py-3 border border-[#1e293b]/50 rounded-xl text-sm font-semibold text-slate-300 hover:text-white">
+              Cancelar
+            </button>
+            <button type="submit"
+                    class="flex-1 py-3 bg-[#00E5FF] hover:bg-cyan-400 text-[#0B101E] text-sm font-bold rounded-xl">
+              Salvar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Quick Pay Modal (when accountId was null on PENDING transaction) -->
+  @if (showPayModal && payingTransaction) {
+    <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md bg-black/60 animate-fade-in">
+      <div class="w-full max-w-md p-8 bg-[#181F32] rounded-3xl border border-[#1e293b]/40 shadow-2xl relative">
+        <h3 class="text-lg font-bold text-white mb-2">Confirmar Baixa de Pagamento</h3>
+        <p class="text-xs text-slate-400 mb-6">
+          Selecione a conta utilizada para efetivar <strong class="text-white">{{ payingTransaction.description }}</strong>.
+        </p>
+
+        <form (ngSubmit)="confirmPayModal()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Conta Bancária</label>
+            <select [(ngModel)]="payAccountId" name="payAccountId" required
+                    class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+              @for (acc of accounts(); track acc.id) {
+                @if (acc.accountType !== 'CREDIT_CARD') {
+                  <option [value]="acc.id">{{ acc.name }} (R$ {{ acc.currentBalance | number:'1.2-2' }})</option>
+                }
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data do Pagamento</label>
+            <input type="date" [(ngModel)]="payDate" name="payDate" required
+                   class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="button" (click)="showPayModal = false"
+                    class="flex-1 py-3 border border-[#1e293b]/50 rounded-xl text-sm font-semibold text-slate-300 hover:text-white">
+              Cancelar
+            </button>
+            <button type="submit"
+                    class="flex-1 py-3 bg-[#00FF88] hover:bg-emerald-400 text-[#0B101E] text-sm font-bold rounded-xl">
+              Confirmar Baixa
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

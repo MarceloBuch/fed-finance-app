@@ -1,0 +1,20 @@
+<div class="flex h-screen bg-[#0B101E] overflow-hidden text-slate-100 font-sans">
+  <!-- Sidebar -->
+  <app-sidebar></app-sidebar>
+
+  <!-- Main Panel -->
+  <div class="flex flex-col flex-1 min-w-0 overflow-hidden">
+    <!-- Topbar -->
+    <app-topbar></app-topbar>
+
+    <!-- Content Area -->
+    <main class="flex-1 overflow-y-auto px-8 py-8">
+      <div class="max-w-6xl mx-auto">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+  </div>
+
+  <!-- Global Toast Notifications -->
+  <app-toast></app-toast>
+</div>

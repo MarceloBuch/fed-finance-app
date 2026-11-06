@@ -1,0 +1,219 @@
+<div class="space-y-8 animate-fade-in">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-white tracking-wide">Cartões de Crédito e Faturas</h2>
+      <p class="text-sm text-slate-400 mt-1">
+        Acompanhe o limite utilizado, as compras alocadas e o fechamento de cada fatura mensal.
+      </p>
+    </div>
+
+    <a routerLink="/accounts"
+       class="px-5 py-2.5 bg-[#00E5FF] hover:bg-cyan-400 text-[#0B101E] text-sm font-bold rounded-full transition-colors flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+      Gerenciar Cartões em Contas
+    </a>
+  </div>
+
+  <!-- Credit Cards Selector Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @for (card of creditCards(); track card.id) {
+      <div (click)="selectCard(card.id)"
+           class="p-6 bg-[#181F32] rounded-3xl border cursor-pointer transition-all duration-300 shadow-lg"
+           [ngClass]="selectedCardId() === card.id ? 'border-[#00E5FF] ring-1 ring-[#00E5FF]/40' : 'border-[#1e293b]/20 hover:border-[#00E5FF]/40'">
+        <div class="flex justify-between items-start">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-purple-300 bg-purple-950/70 px-2.5 py-1 rounded-full border border-purple-500/30">
+              Cartão de Crédito
+            </span>
+            <h3 class="text-lg font-bold text-white mt-2">{{ card.name }}</h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Fecha dia {{ card.closingDay }} · Vence dia {{ card.dueDay }}
+            </p>
+          </div>
+          <span class="text-xs text-slate-400 font-semibold">
+            Conta pag.: {{ getPaymentAccountName(card.paymentAccountId) }}
+          </span>
+        </div>
+
+        <div class="mt-5 space-y-2">
+          <div class="flex justify-between text-xs">
+            <span class="text-slate-400">Utilizado: <strong class="text-rose-400">R$ {{ (card.usedLimit ?? 0) | number:'1.2-2' }}</strong></span>
+            <span class="text-slate-400">Disponível: <strong class="text-[#00FF88]">R$ {{ (card.availableLimit ?? 0) | number:'1.2-2' }}</strong></span>
+          </div>
+          <div class="w-full h-2 bg-[#111727] rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-[#00E5FF] to-purple-500 rounded-full transition-all"
+                 [style.width.%]="getUsagePercent(card)"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-500">
+            <span>Limite Total: R$ {{ (card.creditLimit ?? 0) | number:'1.2-2' }}</span>
+            <span>{{ getUsagePercent(card) }}% em uso</span>
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="col-span-full py-14 flex flex-col items-center justify-center bg-[#181F32] rounded-3xl border border-[#1e293b]/10 text-center">
+        <h4 class="text-base font-semibold text-white">Nenhum Cartão de Crédito Cadastrado</h4>
+        <p class="text-sm text-slate-400 mt-1 max-w-md">
+          Vá em Contas Bancárias e adicione uma conta do tipo Cartão de Crédito informando seu limite e valor atual da fatura.
+        </p>
+      </div>
+    }
+  </div>
+
+  <!-- Selected Card Invoice Detail -->
+  @if (currentInvoice(); as inv) {
+    <div class="p-6 bg-[#181F32] rounded-3xl border border-[#1e293b]/20 space-y-6 shadow-lg">
+      <!-- Invoice Month Navigator & Status -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-[#1e293b]/30">
+        <div class="flex items-center gap-3">
+          <button type="button" (click)="prevMonth()"
+                  class="p-2 bg-[#111727] hover:bg-[#1e293b] text-slate-300 rounded-xl transition-colors">
+            &lt;
+          </button>
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h3 class="text-xl font-bold text-white">Fatura {{ inv.referenceMonth }}</h3>
+              @if (inv.status === 'PAID') {
+                <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-emerald-950/80 text-[#00FF88] border border-emerald-500/30">
+                  Paga
+                </span>
+              } @else if (inv.status === 'CLOSED') {
+                <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30">
+                  Fechada
+                </span>
+              } @else {
+                <span class="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full bg-cyan-950/80 text-[#00E5FF] border border-[#00E5FF]/30">
+                  Aberta
+                </span>
+              }
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Compras de {{ inv.periodStart }} até {{ inv.closingDate }} · Vencimento em <strong class="text-white">{{ inv.dueDate }}</strong>
+            </p>
+          </div>
+          <button type="button" (click)="nextMonth()"
+                  class="p-2 bg-[#111727] hover:bg-[#1e293b] text-slate-300 rounded-xl transition-colors">
+            &gt;
+          </button>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="text-right">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Total da Fatura</span>
+            <span class="text-2xl font-bold text-rose-400">R$ {{ inv.totalAmount | number:'1.2-2' }}</span>
+          </div>
+
+          @if (inv.status !== 'PAID') {
+            <button type="button"
+                    (click)="openPayInvoiceModal()"
+                    class="px-5 py-2.5 bg-[#00FF88] hover:bg-emerald-400 text-[#0B101E] text-xs font-bold rounded-xl transition-colors">
+              Pagar Fatura
+            </button>
+          } @else {
+            <button type="button"
+                    (click)="onUnpayInvoice()"
+                    class="px-4 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-bold rounded-xl transition-colors">
+              Estornar Pagamento
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Invoice Transactions Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-[#1e293b]/30 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <th class="py-3 px-4">Data da Compra</th>
+              <th class="py-3 px-4">Descrição</th>
+              <th class="py-3 px-4">Status no Cartão</th>
+              <th class="py-3 px-4 text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#1e293b]/20">
+            @for (t of inv.transactions; track t.id) {
+              <tr class="text-sm hover:bg-[#111727]/40 transition-colors">
+                <td class="py-3.5 px-4 text-slate-300 whitespace-nowrap">{{ t.dueDate }}</td>
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center gap-2">
+                    <span class="text-white font-semibold">{{ t.description }}</span>
+                    @if (t.installmentNumber) {
+                      <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-[#00E5FF] border border-[#00E5FF]/30">
+                        Parcela #{{ t.installmentNumber }}
+                      </span>
+                    } @else if (t.recurrenceId) {
+                      <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-500/30">
+                        Fixo Automático
+                      </span>
+                    }
+                  </div>
+                </td>
+                <td class="py-3.5 px-4">
+                  @if (t.status === 'PAID') {
+                    <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-950/80 text-[#00FF88] border border-emerald-500/30">
+                      Lançado no Limite
+                    </span>
+                  } @else {
+                    <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/30">
+                      Agendado p/ {{ t.dueDate }}
+                    </span>
+                  }
+                </td>
+                <td class="py-3.5 px-4 text-right font-bold text-rose-400 whitespace-nowrap">
+                  R$ {{ t.amount | number:'1.2-2' }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="py-10 text-center text-slate-500 text-sm">
+                  Nenhuma compra alocada nesta fatura.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Pay Invoice Modal -->
+  @if (showPayModal && currentInvoice(); as inv) {
+    <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md bg-black/60 animate-fade-in">
+      <div class="w-full max-w-md p-8 bg-[#181F32] rounded-3xl border border-[#1e293b]/40 shadow-2xl relative">
+        <h3 class="text-lg font-bold text-white mb-2">Pagar Fatura {{ inv.referenceMonth }}</h3>
+        <p class="text-xs text-slate-400 mb-6">
+          Valor total: <strong class="text-rose-400">R$ {{ inv.totalAmount | number:'1.2-2' }}</strong>
+        </p>
+
+        <form (ngSubmit)="confirmPayInvoice()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Conta de Pagamento</label>
+            <select [(ngModel)]="payAccountId" name="payAccountId" required
+                    class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+              @for (acc of paymentAccounts(); track acc.id) {
+                <option [value]="acc.id">{{ acc.name }} (R$ {{ acc.currentBalance | number:'1.2-2' }})</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data do Pagamento</label>
+            <input type="date" [(ngModel)]="payDate" name="payDate" required
+                   class="w-full px-4 py-2.5 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button type="button" (click)="showPayModal = false"
+                    class="flex-1 py-3 border border-[#1e293b]/50 rounded-xl text-sm font-semibold text-slate-300 hover:text-white">
+              Cancelar
+            </button>
+            <button type="submit"
+                    class="flex-1 py-3 bg-[#00FF88] hover:bg-emerald-400 text-[#0B101E] text-sm font-bold rounded-xl">
+              Confirmar Pagamento
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

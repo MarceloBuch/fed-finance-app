@@ -1,0 +1,316 @@
+<div class="space-y-8 animate-fade-in">
+  <!-- Header section -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h2 class="text-2xl font-bold text-white tracking-wide">Contas Bancárias e Cartões</h2>
+      <p class="text-sm text-slate-400 mt-1">
+        Saldo Consolidado em Caixa (sem cartões):
+        <span class="font-bold text-[#00E5FF]">R$ {{ totalCurrentBalance() | number:'1.2-2' }}</span>
+      </p>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <button type="button"
+              (click)="openTransferModal()"
+              class="px-5 py-2.5 bg-[#181F32] hover:bg-[#111727] text-[#00E5FF] border border-[#00E5FF]/40 text-sm font-bold rounded-full transition-colors flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+        </svg>
+        Transferir / Guardar
+      </button>
+
+      <button type="button"
+              (click)="openCreateModal()"
+              class="px-5 py-2.5 bg-[#00E5FF] hover:bg-cyan-400 text-[#0B101E] text-sm font-bold rounded-full transition-colors flex items-center gap-2 shadow-lg shadow-cyan-500/20">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Adicionar Conta
+      </button>
+    </div>
+  </div>
+
+  <!-- Accounts list -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    @for (account of accounts(); track account.id) {
+      <div class="p-6 bg-[#181F32] rounded-3xl border border-[#1e293b]/10 flex flex-col justify-between min-h-[200px] relative overflow-hidden group hover:border-[#00E5FF]/40 transition-colors duration-300 shadow-lg shadow-black/10">
+        <div>
+          <div class="flex justify-between items-start">
+            <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">
+              {{ getAccountTypeDisplay(account.accountType) }}
+            </span>
+            <div class="flex items-center gap-1">
+              @if (account.accountType !== 'CREDIT_CARD' && nonCardAccounts().length >= 2) {
+                <button type="button"
+                        (click)="openTransferModal(account)"
+                        class="text-slate-400 hover:text-[#00FF88] transition-colors p-1"
+                        title="Transferir desta/para esta conta">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                  </svg>
+                </button>
+              }
+              <button type="button"
+                      (click)="openEditModal(account)"
+                      class="text-slate-400 hover:text-[#00E5FF] transition-colors p-1"
+                      title="Editar Conta">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
+                </svg>
+              </button>
+              <button type="button"
+                      (click)="deleteAccount(account.id)"
+                      class="text-slate-400 hover:text-rose-400 transition-colors p-1"
+                      title="Excluir Conta">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <h4 class="text-lg font-bold text-white mt-1">{{ account.name }}</h4>
+          <p class="text-xs text-slate-400 mt-0.5">
+            @if (account.accountType === 'CREDIT_CARD') {
+              Fechamento dia {{ account.closingDay }} · Vencimento dia {{ account.dueDay }}
+            } @else {
+              Código do Banco: {{ account.bankCode || '-' }}
+            }
+          </p>
+        </div>
+
+        <div class="flex justify-between items-end mt-6">
+          @if (account.accountType === 'CREDIT_CARD') {
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Limite Disponível</span>
+              <span class="text-2xl font-bold text-[#00FF88]">R$ {{ (account.availableLimit ?? 0) | number:'1.2-2' }}</span>
+              <span class="text-[11px] text-slate-400 mt-1">
+                Utilizado: R$ {{ (account.usedLimit ?? 0) | number:'1.2-2' }} / Limite: R$ {{ (account.creditLimit ?? 0) | number:'1.2-2' }}
+              </span>
+            </div>
+          } @else {
+            <div class="flex flex-col">
+              <span class="text-[10px] text-slate-400 uppercase tracking-wider">Saldo Atual</span>
+              <span class="text-2xl font-bold text-[#00E5FF]">R$ {{ account.currentBalance | number:'1.2-2' }}</span>
+              <span class="text-[11px] text-slate-500 mt-1">
+                Saldo Inicial: R$ {{ account.initialBalance | number:'1.2-2' }}
+              </span>
+            </div>
+          }
+          <span class="text-xs bg-[#111727] px-3 py-1 rounded-full text-slate-400 font-semibold border border-[#1e293b]/20">
+            {{ account.currency }}
+          </span>
+        </div>
+
+        <span class="absolute left-0 bottom-0 top-0 w-1 bg-gradient-to-b from-[#00E5FF] to-blue-500"></span>
+      </div>
+    } @empty {
+      <div class="col-span-full py-16 flex flex-col items-center justify-center bg-[#181F32] rounded-3xl border border-[#1e293b]/10 text-center">
+        <h4 class="text-base font-semibold text-white">Nenhuma Conta Encontrada</h4>
+        <p class="text-sm text-slate-400 mt-1 max-w-sm">Cadastre sua primeira conta bancária ou cartão de crédito para começar.</p>
+      </div>
+    }
+  </div>
+
+  <!-- Create/Edit Account Modal Dialog -->
+  @if (showModal) {
+    <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md bg-black/60 animate-fade-in">
+      <div class="w-full max-w-md p-8 bg-[#181F32] rounded-3xl border border-[#1e293b]/40 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <button type="button" (click)="showModal = false" class="absolute top-5 right-5 text-slate-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h3 class="text-lg font-bold text-white mb-6">
+          {{ editingAccountId ? 'Editar Conta' : 'Nova Conta' }}
+        </h3>
+
+        <form (ngSubmit)="onSubmit()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nome da Conta</label>
+            <input type="text" [(ngModel)]="name" name="name" required placeholder="Ex: Inter Principal, Nubank"
+                   class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00E5FF] transition-colors text-sm">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Cód. Banco</label>
+              <input type="text" [(ngModel)]="bankCode" name="bankCode" placeholder="Ex: 077, 260"
+                     class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00E5FF] transition-colors text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Tipo de Conta</label>
+              <select [(ngModel)]="accountType" name="accountType"
+                      class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white focus:outline-none focus:border-[#00E5FF] transition-colors text-sm">
+                <option value="CHECKING">Conta Corrente</option>
+                <option value="SAVINGS">Poupança</option>
+                <option value="INVESTMENT">Investimento</option>
+                <option value="CREDIT_CARD">Cartão de Crédito</option>
+                <option value="CASH">Carteira / Dinheiro</option>
+              </select>
+            </div>
+          </div>
+
+          @if (accountType === 'CREDIT_CARD') {
+            <div class="space-y-4 p-4 bg-[#111727]/60 rounded-2xl border border-[#1e293b]/40">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Limite Total (R$)</label>
+                  <input type="number" step="0.01" [(ngModel)]="creditLimit" name="creditLimit" required
+                         class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                </div>
+                @if (!editingAccountId) {
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Já Utilizado Hoje (R$)</label>
+                    <input type="number" step="0.01" [(ngModel)]="initialUsedAmount" name="initialUsedAmount"
+                           class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  </div>
+                }
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Dia de Fechamento</label>
+                  <input type="number" min="1" max="31" [(ngModel)]="closingDay" name="closingDay" required
+                         class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Dia de Vencimento</label>
+                  <input type="number" min="1" max="31" [(ngModel)]="dueDay" name="dueDay" required
+                         class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Conta de Pagamento da Fatura</label>
+                <select [(ngModel)]="paymentAccountId" name="paymentAccountId" required
+                        class="w-full px-3 py-2.5 bg-[#181F32] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                  @for (acc of nonCardAccounts(); track acc.id) {
+                    <option [value]="acc.id">{{ acc.name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+          } @else {
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Saldo Inicial</label>
+                <input type="number" step="0.01" [(ngModel)]="initialBalance" name="initialBalance" required
+                       class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-[#00E5FF] transition-colors text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Moeda</label>
+                <select [(ngModel)]="currency" name="currency"
+                        class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white focus:outline-none focus:border-[#00E5FF] transition-colors text-sm">
+                  <option value="BRL">BRL (R$)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                </select>
+              </div>
+            </div>
+          }
+
+          <div class="flex gap-3 mt-8">
+            <button type="button" (click)="showModal = false"
+                    class="flex-1 py-3 border border-[#1e293b]/50 rounded-xl text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+              Cancelar
+            </button>
+            <button type="submit"
+                    class="flex-1 py-3 bg-[#00E5FF] hover:bg-cyan-400 text-[#0B101E] text-sm font-bold rounded-xl transition-colors">
+              Confirmar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Transfer Between Accounts Modal Dialog -->
+  @if (showTransferModal) {
+    <div class="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-md bg-black/60 animate-fade-in">
+      <div class="w-full max-w-md p-8 bg-[#181F32] rounded-3xl border border-[#1e293b]/40 shadow-2xl relative">
+        <button type="button" (click)="showTransferModal = false" class="absolute top-5 right-5 text-slate-400 hover:text-white transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h3 class="text-lg font-bold text-white mb-1">Transferir entre Contas</h3>
+        <p class="text-xs text-slate-400 mb-6">
+          Movimente valores entre Conta Corrente, Poupança e Investimentos.
+        </p>
+
+        <form (ngSubmit)="onSubmitTransfer()" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              Conta de Origem (Sai de)
+            </label>
+            <select [(ngModel)]="transferFromAccountId" name="transferFromAccountId" (change)="onTransferSourceChange()" required
+                    class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+              @for (acc of nonCardAccounts(); track acc.id) {
+                <option [value]="acc.id">
+                  {{ acc.name }} ({{ getAccountTypeDisplay(acc.accountType) }} · R$ {{ acc.currentBalance | number:'1.2-2' }})
+                </option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+              Conta de Destino (Vai para)
+            </label>
+            <select [(ngModel)]="transferToAccountId" name="transferToAccountId" required
+                    class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+              @for (acc of nonCardAccounts(); track acc.id) {
+                @if (acc.id !== transferFromAccountId) {
+                  <option [value]="acc.id">
+                    {{ acc.name }} ({{ getAccountTypeDisplay(acc.accountType) }} · R$ {{ acc.currentBalance | number:'1.2-2' }})
+                  </option>
+                }
+              }
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Valor (R$)</label>
+              <input type="number" step="0.01" [(ngModel)]="transferAmount" name="transferAmount" required
+                     class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data</label>
+              <input type="date" [(ngModel)]="transferDate" name="transferDate" required
+                     class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Descrição</label>
+              <input type="text" [(ngModel)]="transferDescription" name="transferDescription" required
+                     class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Status</label>
+              <select [(ngModel)]="transferStatus" name="transferStatus"
+                      class="w-full px-4 py-3 bg-[#111727] border border-[#1e293b]/40 rounded-xl text-white text-sm">
+                <option value="PAID">Efetivada Agora</option>
+                <option value="PENDING">Agendada (Pendente)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-6">
+            <button type="button" (click)="showTransferModal = false"
+                    class="flex-1 py-3 border border-[#1e293b]/50 rounded-xl text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+              Cancelar
+            </button>
+            <button type="submit"
+                    class="flex-1 py-3 bg-[#00FF88] hover:bg-emerald-400 text-[#0B101E] text-sm font-bold rounded-xl transition-colors">
+              Confirmar Transferência
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>
